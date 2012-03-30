@@ -10,4 +10,10 @@ import extract
 
 print "Running geonode-extract v%s" % extract.__version__
 
-extract.run(sys.argv)
+host = sys.argv[1]
+
+options = {}
+if len(sys.argv) > 2:
+    options['dest_dir'] = sys.argv[2]
+
+extract.get_data(host, options**)
