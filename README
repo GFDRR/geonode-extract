@@ -1,1 +1,18 @@
-    Extract data from a GeoNode and dump it in a folder
+Extract data from a GeoNode and dump it in a folder
+
+Installation
+============
+
+Get the latest release using ``pip`` or ``easy_install``::
+
+    pip install geonode-extract
+
+Usage
+=====
+
+geonode-extract http://example.geonode.com -d <dest_dir>
+
+Thanks
+======
+
+This work was initially sponsored by GFDRR.
