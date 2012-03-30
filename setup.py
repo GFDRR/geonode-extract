@@ -11,7 +11,7 @@ def read(fname):
 MAJOR = 0
 MINOR = 1
 MICRO = 6
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 # Return the git revision as a string
@@ -83,8 +83,8 @@ setup(name          = 'geonode-extract',
       keywords      = 'gis vector feature raster data',
       author        = 'Ariel Núñez',
       author_email  = 'ingenieroariel@gmail.com',
-      maintainer        = 'Jude Mwenda',
-      maintainer_email  = 'judemwenda@gmail.com',
+      maintainer        = 'Ariel Núñez',
+      maintainer_email  = 'ingenieroariel@gmail.com',
       url   = 'http://github.com/GFDRR/geonode-extract',
       long_description = read('README'),
       packages = ['extract',],
