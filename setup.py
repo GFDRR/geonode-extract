@@ -39,7 +39,7 @@ def git_version():
     return GIT_REVISION
 
 def write_version_py(filename='extract/version.py'):
-    cnt = """# THIS FILE IS GENERATED FROM SAFESETUP.PY
+    cnt = """# THIS FILE IS GENERATED FROM setup.py in geonode-extract
 short_version = '%(version)s'
 version = '%(version)s'
 full_version = '%(full_version)s'
@@ -57,7 +57,7 @@ if not release:
     elif os.path.exists('extract/version.py'):
         # must be a source distribution, use existing version file
         try:
-            from safe.version import git_revision as GIT_REVISION
+            from extract.version import git_revision as GIT_REVISION
         except ImportError:
             raise ImportError("Unable to import git_revision. Try removing " \
                               "extract/version.py and the build directory " \
@@ -80,7 +80,7 @@ if not release:
     return FULLVERSION
 
 
-# Creates safe/version.py and returns the full version
+# Creates extract/version.py and returns the full version
 full_version = write_version_py()
 
 setup(name          = 'geonode-extract',
