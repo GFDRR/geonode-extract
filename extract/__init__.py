@@ -6,3 +6,5 @@ except ImportError:
     __version__ = "unknwon"
     __git_revision__ = None
 
+
+from extract.data import get_data
