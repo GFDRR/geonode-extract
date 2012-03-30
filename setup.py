@@ -95,6 +95,7 @@ setup(name          = 'geonode-extract',
       url   = 'http://github.com/GFDRR/geonode-extract',
       long_description = read('README'),
       packages = ['extract',],
+      scripts = ['scripts/geonode-extract',],
       classifiers   = [
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
