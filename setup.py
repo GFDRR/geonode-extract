@@ -96,6 +96,7 @@ setup(name          = 'geonode-extract',
       long_description = read('README'),
       packages = ['extract',],
       scripts = ['scripts/geonode-extract',],
+      install_requires = ['requests',],
       classifiers   = [
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
