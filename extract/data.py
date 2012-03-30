@@ -21,7 +21,7 @@ def get_data(url, dest_dir='data'):
 
     layers = data['rows']
     supported_formats = ['zip', 'geotiff']
-    for layer in layers[:1]:
+    for layer in layers:
         # download_links is originally a list of lists, each item looks like:
         # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
         # transforms it into a simple dict, with items like:
@@ -56,7 +56,6 @@ def get_data(url, dest_dir='data'):
                 layer_file.write(content)
                 print 'Saved "%s" as "%s"' % (layer['title'], layer_filename)
 
-                print 'Is "%s" a zipfile? %s' % (layer_filename, zipfile.is_zipfile(layer_filename))
         except Exception, e:
             print 'There was a problem downloading "%s": %s' % (layer['title'], str(e))
             raise e
