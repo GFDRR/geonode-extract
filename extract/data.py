@@ -67,7 +67,7 @@ def get_data(url, dest_dir='data'):
         metadata_links = dict([ (b, c) for a, b, c in layer['metadata_links']])
         metadata_link = metadata_links['TC211']
 
-        base_filename, extension = os.path.splitext(layer_file)
+        base_filename, extension = os.path.splitext(layer_filename)
         metadata_filename = base_filename + '.xml'
         try:
             # Download the file
