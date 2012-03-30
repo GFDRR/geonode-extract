@@ -46,6 +46,10 @@ def get_data(url, dest_dir='data'):
         try:
             # Download the file
             r = requests.get(download_link)
+        except Exception, e:
+            print 'There was a problem downloading "%s": %s' % (layer['title'], str(e))
+            raise e
+        else:
             # FIXME(Ariel): This may be dangerous if file is too large.
             content = r.content
 
@@ -54,8 +58,26 @@ def get_data(url, dest_dir='data'):
             layer_filename = os.path.join(dest_dir, filename)
             with open(layer_filename, 'wb') as layer_file:
                 layer_file.write(content)
-                print 'Saved "%s" as "%s"' % (layer['title'], layer_filename)
+                print 'Saved data from "%s" as "%s"' % (layer['title'], layer_filename)
+ 
+        # metadata_links is originally a list of lists, each item looks like:
+        # ['text/xml', 'TC211', 'http://...//'], this operation
+        # transforms it into a simple dict, with items like:
+        # {'TC211': 'http://.../'}
+        metadata_links = dict([ (b, c) for a, b, c in layer['metadata_links']])
+        metadata_link = metadata_links['TC211']
 
+        base_filename, extension = os.path.splitext(layer_file)
+        metadata_filename = base_filename + '.xml'
+        try:
+            # Download the file
+            r = requests.get(metadata_link)
+            content = r.content
         except Exception, e:
             print 'There was a problem downloading "%s": %s' % (layer['title'], str(e))
             raise e
+        else:
+            with open(metadata_filename, 'wb') as metadata_file:
+                metadata_file.write(content)
+                print 'Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename)
+
