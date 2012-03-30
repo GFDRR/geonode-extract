@@ -1,5 +1,12 @@
 Extract data from a GeoNode and dump it in a folder
 
+Features
+========
+
+ * Downloads data inshapefile format
+ * Downloads metadata in xml format
+ * Downloads styles in sld format (not yet implemented)
+
 Installation
 ============
 
@@ -17,7 +24,7 @@ Known issues
 
 * Does not download styles
 * Does not unzip the shapefiles
-* Does not download metadata
+* Does not work for rasters
 
 Thanks
 ======
