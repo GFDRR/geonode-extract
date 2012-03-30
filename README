@@ -12,6 +12,13 @@ Usage
 
 geonode-extract http://example.geonode.com -d <dest_dir>
 
+Known issues
+============
+
+* Does not download styles
+* Does not unzip the shapefiles
+* Does not download metadata
+
 Thanks
 ======
 
