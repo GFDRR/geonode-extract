@@ -16,4 +16,4 @@ options = {}
 if len(sys.argv) > 2:
     options['dest_dir'] = sys.argv[2]
 
-extract.get_data(host, options*)
+extract.get_data(host, **options)
