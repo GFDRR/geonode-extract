@@ -4,17 +4,29 @@ import json
 import zipfile
 import requests
 import urlparse
+import logging
 from extract import __version__
 from optparse import OptionParser
+
+log = logging.getLogger("geonode-extract")
+
+# Usual logging boilerplate, unnecessary in Python >= 3.1.
+try:
+    from logging import NullHandler
+except ImportError:
+    class NullHandler(logging.Handler):
+        def emit(self, record): pass
+log.addHandler(NullHandler())
 
 parser = OptionParser(usage="%prog <geonode_url> [options]",
                       version="%prog " + __version__)
 
 parser.add_option("-d", "--dest-dir", dest="dest_dir",
                           help="write data to dir", default='data', metavar="PATH")
-parser.add_option("-q", "--quiet",
-                        action="store_false", dest="verbose", default=True,
-                        help="don't print status messages to stdout")
+parser.add_option("-v", dest="verbose", default=1, action="count",
+                      help="increment output verbosity; may be specified multiple times")
+
+
 
 def get_parser():
     return parser
@@ -23,6 +35,12 @@ def get_data(argv=None):
     # Get the arguments passed or get them from sys
     the_argv = argv or sys.argv[:]
     options, original_args = parser.parse_args(the_argv)
+
+    # For each -v passed on the commandline, a lower log.level will be enabled.
+    # log.ERROR by default, log.INFO with -vv, etc.
+    log.addHandler(logging.StreamHandler())
+    log.level = max(logging.ERROR - (options.verbose * 10), 1)
+
     args = original_args[1:]
     if len(args) != 1:
         parser.error('Please supply a <geonode_url>, for example: http://demo.geonode.org')
@@ -31,7 +49,7 @@ def get_data(argv=None):
     dest_dir = options.dest_dir
 
     output_dir = os.path.abspath(dest_dir)
-    print 'Getting data from "%s" into "%s"' % (url, output_dir)
+    log.info('Getting data from "%s" into "%s"' % (url, output_dir))
 
     # Create output directory if it does not exist
     if not os.path.isdir(output_dir):
@@ -39,10 +57,10 @@ def get_data(argv=None):
 
     # Get the list of layers from GeoNode's search api JSON endpoint
     search_api_endpoint = urlparse.urljoin(url, '/data/search/api')
-    print 'Retriving list of layers from "%s"' % search_api_endpoint
+    log.debug('Retriving list of layers from "%s"' % search_api_endpoint)
     r = requests.get(search_api_endpoint)
     data = json.loads(r.text)
-    print 'Found %s layers, starting extraction' % data['total']
+    log.info('Found %s layers, starting extraction' % data['total'])
 
     layers = data['rows']
     supported_formats = ['zip', 'geotiff']
@@ -66,13 +84,13 @@ def get_data(argv=None):
             raise Exception(msg)
 
         download_link = download_links[download_format]
-        print 'Download link for this layer is "%s"' % download_link
+        log.debug('Download link for this layer is "%s"' % download_link)
 
         try:
             # Download the file
             r = requests.get(download_link)
         except Exception, e:
-            print 'There was a problem downloading "%s": %s' % (layer['title'], str(e))
+            log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)),e)
             raise e
         else:
             # FIXME(Ariel): This may be dangerous if file is too large.
@@ -83,7 +101,7 @@ def get_data(argv=None):
             layer_filename = os.path.join(dest_dir, filename)
             with open(layer_filename, 'wb') as layer_file:
                 layer_file.write(content)
-                print 'Saved data from "%s" as "%s"' % (layer['title'], layer_filename)
+                log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
  
         # metadata_links is originally a list of lists, each item looks like:
         # ['text/xml', 'TC211', 'http://...//'], this operation
@@ -99,11 +117,11 @@ def get_data(argv=None):
             r = requests.get(metadata_link)
             content = r.content
         except Exception, e:
-            print 'There was a problem downloading "%s": %s' % (layer['title'], str(e))
+            log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)), e)
             raise e
         else:
             with open(metadata_filename, 'wb') as metadata_file:
                 metadata_file.write(content)
-                print 'Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename)
+                log.debug('Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename))
 
 
