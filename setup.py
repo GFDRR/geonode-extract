@@ -90,6 +90,7 @@ setup(name          = 'geonode-extract',
       packages = ['extract',],
       scripts = ['scripts/geonode-extract',],
       install_requires = ['requests',],
+      cmdclass={'build_manpage': build_manpage},
       classifiers   = [
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
