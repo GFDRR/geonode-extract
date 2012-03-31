@@ -1,25 +1,33 @@
 import os
+import sys
 import json
 import zipfile
 import requests
 import urlparse
-
+from extract import __version__
 from optparse import OptionParser
 
-parser = OptionParser()
-parser.add_option("-d", "--dest-dir", dest="dest_dir",
-                          help="write data to dir", default='data')
-parser.add_option("-q", "--quiet",
-                          action="store_false", dest="verbose", default=True,
-                                            help="don't print status messages to stdout")
+parser = OptionParser(usage="%prog <geonode_url> [options]",
+                      version="%prog " + __version__)
 
+parser.add_option("-d", "--dest-dir", dest="dest_dir",
+                          help="write data to dir", default='data', metavar="PATH")
+parser.add_option("-q", "--quiet",
+                        action="store_false", dest="verbose", default=True,
+                        help="don't print status messages to stdout")
 
 
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
     the_argv = argv or sys.argv[:]
-    options, args = parser.parse_args(the_argv)
-    
+    options, original_args = parser.parse_args(the_argv)
+    args = original_args[1:]
+    if len(args) != 1:
+        parser.error('Please supply a <geonode_url>, for example: http://demo.geonode.org')
+
+    url = args[0]
+    dest_dir = options.dest_dir
+
     output_dir = os.path.abspath(dest_dir)
     print 'Getting data from "%s" into "%s"' % (url, output_dir)
 
