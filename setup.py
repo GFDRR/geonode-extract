@@ -10,9 +10,9 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 MAJOR = 0
-MINOR = 1
-MICRO = 9
-ISRELEASED = True
+MINOR = 2
+MICRO = 0
+ISRELEASED = False
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 # Return the git revision as a string
