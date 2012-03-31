@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from distutils.core import setup
+from extract.build_manpage import build_manpage
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()

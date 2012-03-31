@@ -4,7 +4,22 @@ import zipfile
 import requests
 import urlparse
 
-def get_data(url, dest_dir='data'):
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option("-d", "--dest-dir", dest="dest_dir",
+                          help="write data to dir", default='data')
+parser.add_option("-q", "--quiet",
+                          action="store_false", dest="verbose", default=True,
+                                            help="don't print status messages to stdout")
+
+
+
+def get_data(argv=None):
+    # Get the arguments passed or get them from sys
+    the_argv = argv or sys.argv[:]
+    options, args = parser.parse_args(the_argv)
+    
     output_dir = os.path.abspath(dest_dir)
     print 'Getting data from "%s" into "%s"' % (url, output_dir)
 
@@ -80,4 +95,5 @@ def get_data(url, dest_dir='data'):
             with open(metadata_filename, 'wb') as metadata_file:
                 metadata_file.write(content)
                 print 'Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename)
+
 
