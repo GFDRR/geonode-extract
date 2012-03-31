@@ -3,7 +3,11 @@
 import os
 import subprocess
 
-from distutils.core import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
 from extract.build_manpage import build_manpage
 
 def read(fname):
