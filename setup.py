@@ -90,6 +90,7 @@ setup(name          = 'geonode-extract',
       long_description = read('README'),
       packages = ['extract',],
       scripts = ['scripts/geonode-extract',],
+      data_files = [('lib/man', ['docs/man/geonode-extract.1']),],
       install_requires = ['requests',],
       cmdclass={'build_manpage': build_manpage},
       classifiers   = [
