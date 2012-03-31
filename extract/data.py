@@ -16,6 +16,8 @@ parser.add_option("-q", "--quiet",
                         action="store_false", dest="verbose", default=True,
                         help="don't print status messages to stdout")
 
+def get_parser():
+    return parser
 
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
