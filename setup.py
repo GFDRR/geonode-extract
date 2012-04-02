@@ -8,6 +8,16 @@ try:
 except ImportError:
     from distutils.core import setup
 
+# If it is possible, build the manpage
+# This seemed to be the cause of problems in pypi
+cmdclass = {}
+try:
+    from extract.build_manpage import build_manpage
+except ImportError,e:
+    print "Warning, Could not build manpage."
+else:
+    cmdclass['build_manpage'] = build_manpage
+
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
