@@ -5,6 +5,7 @@ import zipfile
 import requests
 import urlparse
 import logging
+import datetime
 from extract import __version__
 from optparse import OptionParser
 
@@ -31,6 +32,73 @@ parser.add_option("-v", dest="verbose", default=1, action="count",
 def get_parser():
     return parser
 
+def get_layer(layer):
+    # download_links is originally a list of lists, each item looks like:
+    # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
+    # transforms it into a simple dict, with items like:
+    # {'zip': 'http://.../'}
+    download_links = dict([ (a, c) for a, b, c in layer['download_links']])
+
+    # Find out the appropiate download format for this layer
+    for f in supported_formats:
+        if f in download_links:
+            download_format = f
+            break
+    else:
+        msg = 'Only "%s" are supported for the extract, available formats for "%s" are: "%s"' % (
+                                         ', '.join(supported_formats),
+                                         layer['title'],
+                                         ', '.join(download_links.keys()))
+        log.error(msg)
+        raise Exception(msg)
+
+    download_link = download_links[download_format]
+    log.debug('Download link for this layer is "%s"' % download_link)
+
+    try:
+        # Download the file
+        r = requests.get(download_link)
+    except Exception, e:
+        log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)),e)
+        raise e
+    else:
+        # FIXME(Ariel): This may be dangerous if file is too large.
+        content = r.content
+            
+        if 'content-disposition' not in r.headers:
+            msg = ('Layer "%s" did not have a valid download link "%s"' % 
+                    (layer['title'], download_link))
+            log.error(msg)
+            raise Exception(msg)
+        # Figure out the filename based on the 'content-disposition' header.
+        filename = r.headers['content-disposition'].split('filename=')[1]
+        layer_filename = os.path.join(dest_dir, filename)
+        with open(layer_filename, 'wb') as layer_file:
+            layer_file.write(content)
+            log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
+
+    # metadata_links is originally a list of lists, each item looks like:
+    # ['text/xml', 'TC211', 'http://...//'], this operation
+    # transforms it into a simple dict, with items like:
+    # {'TC211': 'http://.../'}
+    metadata_links = dict([ (b, c) for a, b, c in layer['metadata_links']])
+    metadata_link = metadata_links['TC211']
+
+    base_filename, extension = os.path.splitext(layer_filename)
+    metadata_filename = base_filename + '.xml'
+    try:
+        # Download the file
+        r = requests.get(metadata_link)
+        content = r.content
+    except Exception, e:
+        log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)), e)
+        raise e
+    else:
+        with open(metadata_filename, 'wb') as metadata_file:
+            metadata_file.write(content)
+            log.debug('Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename))
+
+
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
     the_argv = argv or sys.argv[:]
@@ -40,6 +108,8 @@ def get_data(argv=None):
     # log.ERROR by default, log.INFO with -vv, etc.
     log.addHandler(logging.StreamHandler())
     log.level = max(logging.ERROR - (options.verbose * 10), 1)
+
+    start = datetime.datetime.now()
 
     args = original_args[1:]
     if len(args) != 1:
@@ -67,71 +137,51 @@ def get_data(argv=None):
     log.info('Found %s layers, starting extraction' % data['total'])
 
     layers = data['rows']
+    number = len(layers)
     supported_formats = ['zip', 'geotiff']
-    for layer in layers:
-        # download_links is originally a list of lists, each item looks like:
-        # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
-        # transforms it into a simple dict, with items like:
-        # {'zip': 'http://.../'}
-        download_links = dict([ (a, c) for a, b, c in layer['download_links']])
-
-        # Find out the appropiate download format for this layer
-        for f in supported_formats:
-            if f in download_links:
-                download_format = f
-                break
-        else:
-            msg = 'Only "%s" are supported for the extract, available formats for "%s" are: "%s"' % (
-                                             ', '.join(supported_formats),
-                                             layer['title'],
-                                             ', '.join(download_links.keys()))
-            log.error(msg)
-            raise Exception(msg)
-
-        download_link = download_links[download_format]
-        log.debug('Download link for this layer is "%s"' % download_link)
-
+    output = []
+    for i, layer in enumerate(layers):
         try:
-            # Download the file
-            r = requests.get(download_link)
+            download_layer(layer)
         except Exception, e:
-            log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)),e)
-            raise e
+            log.error('Could not download layer "%s". Error was: "%s"' % (layer['title'], str(e))) 
+            exception_type, error, traceback = sys.exc_info()
+            status = 'failed'
         else:
-            # FIXME(Ariel): This may be dangerous if file is too large.
-            content = r.content
-            
-            if 'content-disposition' not in r.headers:
-                msg = ('Layer "%s" did not have a valid download link "%s"' % 
-                        (layer['title'], download_link))
-                log.error(msg)
-                raise Exception(msg)
-            # Figure out the filename based on the 'content-disposition' header.
-            filename = r.headers['content-disposition'].split('filename=')[1]
-            layer_filename = os.path.join(dest_dir, filename)
-            with open(layer_filename, 'wb') as layer_file:
-                layer_file.write(content)
-                log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
- 
-        # metadata_links is originally a list of lists, each item looks like:
-        # ['text/xml', 'TC211', 'http://...//'], this operation
-        # transforms it into a simple dict, with items like:
-        # {'TC211': 'http://.../'}
-        metadata_links = dict([ (b, c) for a, b, c in layer['metadata_links']])
-        metadata_link = metadata_links['TC211']
+            status = 'downloaded'
 
-        base_filename, extension = os.path.splitext(layer_filename)
-        metadata_filename = base_filename + '.xml'
-        try:
-            # Download the file
-            r = requests.get(metadata_link)
-            content = r.content
-        except Exception, e:
-            log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)), e)
-            raise e
-        else:
-            with open(metadata_filename, 'wb') as metadata_file:
-                metadata_file.write(content)
-                log.debug('Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename))
+        info = {'name': layer['title'], 'status': status}
+        if status == 'failed':
+           info['traceback'] = traceback
+           info['exception_type'] = exception_type
+           info['error'] = error
+           if strict:
+               msg = "Stopping process because --ignore-errors was not set and an error was found."
+               log.debug(msg)
+               raise e
 
+        output.append(info)
+        msg = "[%s] Layer %s (%d/%d)" % (status, name, i, number)
+        log.info(msg)
 
+    downloaded = [dict_['name'] for dict_ in output if dict_['status']=='downloaded']
+    failed = [dict_['name'] for dict_ in output if dict_['status']=='failed']
+    finish = datetime.datetime.now()
+    td = finish - start
+    duration = td.microseconds / 1000000 + td.seconds + td.days * 24 * 3600
+    duration_rounded = round(duration, 2)
+
+    log.debug("\nDetailed report of failures:")
+    for dict_ in output:
+        if dict_['status'] == 'failed':
+            log.debug("\n\n", dict_['name'], "\n================")
+            traceback.print_exception(dict_['exception_type'],
+                                      dict_['error'],
+                                      dict_['traceback'])
+
+    log.info("Finished processing %d layers in %s seconds." % (
+                              len(output), duration_rounded))
+    log.info("%d Downloaded layers" % len(downloaded))
+    log.info("%d Failed layers" % len(failed))
+    if len(output) > 0:
+        log.info("%f seconds per layer" % (duration * 1.0 / len(output)))
