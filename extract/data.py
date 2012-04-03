@@ -29,12 +29,13 @@ parser.add_option("-i", "--ignore-errors", action="store_true", dest='ignore_err
 parser.add_option("-v", dest="verbose", default=1, action="count",
                       help="increment output verbosity; may be specified multiple times")
 
+SUPPORTED_FORMATS = ['zip', 'geotiff']
 
 
 def get_parser():
     return parser
 
-def download_layer(layer):
+def download_layer(layer, dest_dir):
     # download_links is originally a list of lists, each item looks like:
     # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
     # transforms it into a simple dict, with items like:
@@ -42,13 +43,13 @@ def download_layer(layer):
     download_links = dict([ (a, c) for a, b, c in layer['download_links']])
 
     # Find out the appropiate download format for this layer
-    for f in supported_formats:
+    for f in SUPPORTED_FORMATS:
         if f in download_links:
             download_format = f
             break
     else:
         msg = 'Only "%s" are supported for the extract, available formats for "%s" are: "%s"' % (
-                                         ', '.join(supported_formats),
+                                         ', '.join(SUPPORTED_FORMATS),
                                          layer['title'],
                                          ', '.join(download_links.keys()))
         log.error(msg)
@@ -65,7 +66,7 @@ def download_layer(layer):
         raise e
     else:
         # FIXME(Ariel): This may be dangerous if file is too large.
-        content = r.content
+#        content = r.content
             
         if 'content-disposition' not in r.headers:
             msg = ('Layer "%s" did not have a valid download link "%s"' % 
@@ -75,9 +76,9 @@ def download_layer(layer):
         # Figure out the filename based on the 'content-disposition' header.
         filename = r.headers['content-disposition'].split('filename=')[1]
         layer_filename = os.path.join(dest_dir, filename)
-        with open(layer_filename, 'wb') as layer_file:
-            layer_file.write(content)
-            log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
+#        with open(layer_filename, 'wb') as layer_file:
+#            layer_file.write(content)
+#            log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
 
     # metadata_links is originally a list of lists, each item looks like:
     # ['text/xml', 'TC211', 'http://...//'], this operation
@@ -141,11 +142,10 @@ def get_data(argv=None):
 
     layers = data['rows']
     number = len(layers)
-    supported_formats = ['zip', 'geotiff']
     output = []
     for i, layer in enumerate(layers):
         try:
-            download_layer(layer)
+            download_layer(layer, dest_dir)
         except Exception, e:
             log.error('Could not download layer "%s". Error was: "%s"' % (layer['title'], str(e))) 
             exception_type, error, traceback = sys.exc_info()
@@ -154,6 +154,9 @@ def get_data(argv=None):
             status = 'downloaded'
 
         info = {'name': layer['title'], 'status': status}
+        msg = "[%s] Layer %s (%d/%d)" % (info['status'], info['name'], i, number)
+        log.info(msg)
+
         if status == 'failed':
            info['traceback'] = traceback
            info['exception_type'] = exception_type
@@ -164,8 +167,6 @@ def get_data(argv=None):
                raise e
 
         output.append(info)
-        msg = "[%s] Layer %s (%d/%d)" % (status, name, i, number)
-        log.info(msg)
 
     downloaded = [dict_['name'] for dict_ in output if dict_['status']=='downloaded']
     failed = [dict_['name'] for dict_ in output if dict_['status']=='failed']
