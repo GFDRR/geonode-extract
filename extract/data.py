@@ -57,7 +57,7 @@ def get_data(argv=None):
 
     # Get the list of layers from GeoNode's search api JSON endpoint
     search_api_endpoint = urlparse.urljoin(url, '/data/search/api')
-    log.debug('Retriving list of layers from "%s"' % search_api_endpoint)
+    log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
     try:
         r = requests.get(search_api_endpoint)
     except requests.exceptions.ConnectionError, e:
