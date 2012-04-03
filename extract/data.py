@@ -66,7 +66,7 @@ def download_layer(layer, dest_dir):
         raise e
     else:
         # FIXME(Ariel): This may be dangerous if file is too large.
-#        content = r.content
+        content = r.content
             
         if 'content-disposition' not in r.headers:
             msg = ('Layer "%s" did not have a valid download link "%s"' % 
@@ -76,9 +76,9 @@ def download_layer(layer, dest_dir):
         # Figure out the filename based on the 'content-disposition' header.
         filename = r.headers['content-disposition'].split('filename=')[1]
         layer_filename = os.path.join(dest_dir, filename)
-#        with open(layer_filename, 'wb') as layer_file:
-#            layer_file.write(content)
-#            log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
+        with open(layer_filename, 'wb') as layer_file:
+            layer_file.write(content)
+            log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
 
     # metadata_links is originally a list of lists, each item looks like:
     # ['text/xml', 'TC211', 'http://...//'], this operation
