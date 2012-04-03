@@ -99,7 +99,11 @@ def get_data(argv=None):
         else:
             # FIXME(Ariel): This may be dangerous if file is too large.
             content = r.content
-
+            
+            if 'content-disposition' not in r.headers:
+                msg = ('Layer "%s" did not have a valid download link "%s"' % 
+                        (layer['title'], download_link))
+                raise Exception(msg)
             # Figure out the filename based on the 'content-disposition' header.
             filename = r.headers['content-disposition'].split('filename=')[1]
             layer_filename = os.path.join(dest_dir, filename)
