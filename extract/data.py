@@ -24,6 +24,8 @@ parser = OptionParser(usage="%prog <geonode_url> [options]",
 
 parser.add_option("-d", "--dest-dir", dest="dest_dir",
                           help="write data to dir", default='data', metavar="PATH")
+parser.add_option("-i", "--ignore-errors", action="store_true", dest='ignore_errors', default=False,
+                          help="Stop after any errors are encountered")
 parser.add_option("-v", dest="verbose", default=1, action="count",
                       help="increment output verbosity; may be specified multiple times")
 
@@ -32,7 +34,7 @@ parser.add_option("-v", dest="verbose", default=1, action="count",
 def get_parser():
     return parser
 
-def get_layer(layer):
+def download_layer(layer):
     # download_links is originally a list of lists, each item looks like:
     # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
     # transforms it into a simple dict, with items like:
@@ -117,6 +119,7 @@ def get_data(argv=None):
 
     url = args[0]
     dest_dir = options.dest_dir
+    ignore_errors = options.ignore_errors
 
     output_dir = os.path.abspath(dest_dir)
     log.info('Getting data from "%s" into "%s"' % (url, output_dir))
@@ -155,7 +158,7 @@ def get_data(argv=None):
            info['traceback'] = traceback
            info['exception_type'] = exception_type
            info['error'] = error
-           if strict:
+           if not ignore_errors:
                msg = "Stopping process because --ignore-errors was not set and an error was found."
                log.debug(msg)
                raise e
