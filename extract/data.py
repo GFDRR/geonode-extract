@@ -85,6 +85,7 @@ def get_data(argv=None):
                                              ', '.join(supported_formats),
                                              layer['title'],
                                              ', '.join(download_links.keys()))
+            log.error(msg)
             raise Exception(msg)
 
         download_link = download_links[download_format]
@@ -103,6 +104,7 @@ def get_data(argv=None):
             if 'content-disposition' not in r.headers:
                 msg = ('Layer "%s" did not have a valid download link "%s"' % 
                         (layer['title'], download_link))
+                log.error(msg)
                 raise Exception(msg)
             # Figure out the filename based on the 'content-disposition' header.
             filename = r.headers['content-disposition'].split('filename=')[1]
