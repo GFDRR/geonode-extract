@@ -30,7 +30,7 @@ parser.add_option("-p", "--password", dest="password",
                           help="GeoNode password")
 parser.add_option("-i", "--ignore-errors", action="store_true", dest='ignore_errors', default=False,
                           help="Stop after any errors are encountered")
-parser.add_option("-l", "--limit", dest="limit",
+parser.add_option("-l", "--limit", dest="limit", type="int",
                           help="Limit the number of layers to be extracted")
 parser.add_option("-v", dest="verbose", default=1, action="count",
                       help="increment output verbosity; may be specified multiple times")
@@ -120,7 +120,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
 
     # Download the associated style
     style_data = get_style(layer, username, password)
-    style_filename = base+filename + '.sld'
+    style_filename = base_filename + '.sld'
     with open(style_filename, 'wb') as style_file:
         style_file.write(style_data)
         log.debug('Saved style from "%s" as "%s"' % (layer['title'], style_filename))
@@ -179,6 +179,7 @@ def get_data(argv=None):
             layers = all_layers[:limit]
 
     number = len(layers)
+    log.info('Processing %s layers' % number)
     output = []
     for i, layer in enumerate(layers):
         try:
