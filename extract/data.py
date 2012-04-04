@@ -24,8 +24,14 @@ parser = OptionParser(usage="%prog <geonode_url> [options]",
 
 parser.add_option("-d", "--dest-dir", dest="dest_dir",
                           help="write data to dir", default='data', metavar="PATH")
+parser.add_option("-u", "--username", dest="username",
+                          help="GeoNode username")
+parser.add_option("-p", "--password", dest="password",
+                          help="GeoNode password")
 parser.add_option("-i", "--ignore-errors", action="store_true", dest='ignore_errors', default=False,
                           help="Stop after any errors are encountered")
+parser.add_option("-l", "--limit", dest="limit",
+                          help="Limit the number of layers to be extracted")
 parser.add_option("-v", dest="verbose", default=1, action="count",
                       help="increment output verbosity; may be specified multiple times")
 
@@ -35,7 +41,18 @@ SUPPORTED_FORMATS = ['zip', 'geotiff']
 def get_parser():
     return parser
 
-def download_layer(layer, dest_dir):
+def get_style(layer, username=None, password=None):
+    """Downloads the associated SLD file for a given GeoNode layer
+
+       The current implementation goes to the layer's detail page and follows the
+       link to the GeoServer's REST API endpoint. It needs the username and password,
+       because by default GeoServer restricts read access to those.
+
+       It returns the raw content of the SLD file in text format.
+    """
+    return "nothing"
+
+def download_layer(layer, dest_dir, username=None, password=None):
     # download_links is originally a list of lists, each item looks like:
     # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
     # transforms it into a simple dict, with items like:
@@ -101,6 +118,12 @@ def download_layer(layer, dest_dir):
             metadata_file.write(content)
             log.debug('Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename))
 
+    # Download the associated style
+    style_data = get_style(layer, username, password)
+    style_filename = base+filename + '.sld'
+    with open(style_filename, 'wb') as style_file:
+        style_file.write(style_data)
+        log.debug('Saved style from "%s" as "%s"' % (layer['title'], style_filename))
 
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
@@ -121,7 +144,13 @@ def get_data(argv=None):
     url = args[0]
     dest_dir = options.dest_dir
     ignore_errors = options.ignore_errors
-    print 'Ignore errors is %s' % ignore_errors
+
+    #FIXME(Ariel): Add validation. Both arguments should be supplied if one of them is specified.
+    username = options.username
+    password = options.password
+
+    limit = options.limit
+
     output_dir = os.path.abspath(dest_dir)
     log.info('Getting data from "%s" into "%s"' % (url, output_dir))
 
@@ -140,12 +169,20 @@ def get_data(argv=None):
     data = json.loads(r.text)
     log.info('Found %s layers, starting extraction' % data['total'])
 
-    layers = data['rows']
+    all_layers = data['rows']
+
+
+    layers = all_layers
+
+    if limit is not None:
+        if limit < len(all_layers):
+            layers = all_layers[:limit]
+
     number = len(layers)
     output = []
     for i, layer in enumerate(layers):
         try:
-            download_layer(layer, dest_dir)
+            download_layer(layer, dest_dir, username, password)
         except Exception, e:
             log.error('Could not download layer "%s".' % layer['title'], e) 
             exception_type, error, traceback = sys.exc_info()
