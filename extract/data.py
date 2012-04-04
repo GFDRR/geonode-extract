@@ -153,7 +153,7 @@ def get_data(argv=None):
         else:
             status = 'downloaded'
 
-        info = {'name': layer['title'], 'status': status}
+        info = {'name': layer['name'], 'title': layer['title'], 'status': status}
         msg = "[%s] Layer %s (%d/%d)" % (info['status'], info['name'], i, number)
         log.info(msg)
 
