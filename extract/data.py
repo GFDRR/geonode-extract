@@ -62,7 +62,7 @@ def download_layer(layer, dest_dir):
         # Download the file
         r = requests.get(download_link)
     except Exception, e:
-        log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)),e)
+        log.error('There was a problem downloading "%s".' % layer['title'],e)
         raise e
     else:
         # FIXME(Ariel): This may be dangerous if file is too large.
@@ -121,7 +121,7 @@ def get_data(argv=None):
     url = args[0]
     dest_dir = options.dest_dir
     ignore_errors = options.ignore_errors
-
+    print 'Ignore errors is %s' % ignore_errors
     output_dir = os.path.abspath(dest_dir)
     log.info('Getting data from "%s" into "%s"' % (url, output_dir))
 
@@ -147,7 +147,7 @@ def get_data(argv=None):
         try:
             download_layer(layer, dest_dir)
         except Exception, e:
-            log.error('Could not download layer "%s". Error was: "%s"' % (layer['title'], str(e))) 
+            log.error('Could not download layer "%s".' % layer['title'], e) 
             exception_type, error, traceback = sys.exc_info()
             status = 'failed'
         else:
