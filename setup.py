@@ -23,9 +23,9 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 MAJOR = 0
-MINOR = 2
-MICRO = 7
-ISRELEASED = False
+MINOR = 3
+MICRO = 0
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 # Return the git revision as a string
@@ -107,7 +107,7 @@ setup(name          = 'geonode-extract',
       install_requires = ['requests',],
       cmdclass=cmdclass,
       classifiers   = [
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
