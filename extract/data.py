@@ -67,7 +67,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
     else:
         msg = 'Only "%s" are supported for the extract, available formats for "%s" are: "%s"' % (
                                          ', '.join(SUPPORTED_FORMATS),
-                                         layer['title'],
+                                         layer['name'],
                                          ', '.join(download_links.keys()))
         log.error(msg)
         raise RuntimeError(msg)
@@ -77,9 +77,11 @@ def download_layer(layer, dest_dir, username=None, password=None):
 
     try:
         # Download the file
+        log.debug('Starting data download for "%s"' % layer['name'])
         r = requests.get(download_link)
+        log.debug('Finished downloading data for "%s"' % layer['name'])
     except Exception, e:
-        log.exception('There was a problem downloading "%s".' % layer['title'])
+        log.exception('There was a problem downloading "%s".' % layer['name'])
         raise e
     else:
         # FIXME(Ariel): This may be dangerous if file is too large.
@@ -87,7 +89,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
             
         if 'content-disposition' not in r.headers:
             msg = ('Layer "%s" did not have a valid download link "%s"' % 
-                    (layer['title'], download_link))
+                    (layer['name'], download_link))
             log.error(msg)
             raise RuntimeError(msg)
         # Figure out the filename based on the 'content-disposition' header.
@@ -95,7 +97,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
         layer_filename = os.path.join(dest_dir, filename)
         with open(layer_filename, 'wb') as layer_file:
             layer_file.write(content)
-            log.debug('Saved data from "%s" as "%s"' % (layer['title'], layer_filename))
+            log.debug('Saved data from "%s" as "%s"' % (layer['name'], layer_filename))
 
     # metadata_links is originally a list of lists, each item looks like:
     # ['text/xml', 'TC211', 'http://...//'], this operation
@@ -111,19 +113,19 @@ def download_layer(layer, dest_dir, username=None, password=None):
         r = requests.get(metadata_link)
         content = r.content
     except Exception, e:
-        log.error('There was a problem downloading "%s": %s' % (layer['title'], str(e)), e)
+        log.error('There was a problem downloading "%s": %s' % (layer['name'], str(e)), e)
         raise e
     else:
         with open(metadata_filename, 'wb') as metadata_file:
             metadata_file.write(content)
-            log.debug('Saved metadata from "%s" as "%s"' % (layer['title'], metadata_filename))
+            log.debug('Saved metadata from "%s" as "%s"' % (layer['name'], metadata_filename))
 
     # Download the associated style
     style_data = get_style(layer, username, password)
     style_filename = base_filename + '.sld'
     with open(style_filename, 'wb') as style_file:
         style_file.write(style_data)
-        log.debug('Saved style from "%s" as "%s"' % (layer['title'], style_filename))
+        log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
 
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
