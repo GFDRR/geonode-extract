@@ -8,6 +8,7 @@ import logging
 import datetime
 from extract import __version__
 from optparse import OptionParser
+import traceback as tb
 
 log = logging.getLogger("geonode-extract")
 
@@ -216,18 +217,26 @@ def get_data(argv=None):
     log.info('Processing %s layers' % number)
     output = []
     for i, layer in enumerate(layers):
-        try:
-            download_layer(layer, url, dest_dir, username, password)
-        except Exception, e:
-            log.exception('Could not download layer "%s".' % layer['name']) 
-            exception_type, error, traceback = sys.exc_info()
-            status = 'failed'
-            if not ignore_errors:
-                msg = "Stopping process because --ignore-errors was not set and an error was found."
-                log.error(msg)
-                sys.exit(-1)
+        if ':' in layer['name']:
+            name = layer['name'].split(':')[1]
         else:
-            status = 'downloaded'
+            name = layer['name']
+
+        if os.path.exists(os.path.join(dest_dir, name + '.sld')):
+            status = 'skipped'
+        else:
+            try:
+                download_layer(layer, url, dest_dir, username, password)
+            except Exception, e:
+                log.exception('Could not download layer "%s".' % layer['name']) 
+                exception_type, error, traceback = sys.exc_info()
+                status = 'failed'
+                if not ignore_errors:
+                    msg = "Stopping process because --ignore-errors was not set and an error was found."
+                    log.error(msg)
+                    sys.exit(-1)
+            else:
+               status = 'downloaded'
 
         info = {'name': layer['name'], 'title': layer['title'], 'status': status}
         msg = "[%s] Layer %s (%d/%d)" % (info['status'], info['name'], i+1, number)
@@ -250,8 +259,8 @@ def get_data(argv=None):
     log.debug("\nDetailed report of failures:")
     for dict_ in output:
         if dict_['status'] == 'failed':
-            log.debug("\n\n", dict_['name'], "\n================")
-            traceback.print_exception(dict_['exception_type'],
+            log.debug(dict_['name'])
+            tb.print_exception(dict_['exception_type'],
                                       dict_['error'],
                                       dict_['traceback'])
 
