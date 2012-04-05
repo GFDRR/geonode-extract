@@ -43,7 +43,7 @@ SUPPORTED_FORMATS = ['zip', 'geotiff']
 def get_parser():
     return parser
 
-def get_style(layer, username=None, password=None):
+def get_style(layer, url, username=None, password=None):
     """Downloads the associated SLD file for a given GeoNode layer
 
        The current implementation goes to the layer's detail page and follows the
@@ -52,9 +52,35 @@ def get_style(layer, username=None, password=None):
 
        It returns the raw content of the SLD file in text format.
     """
-    return "nothing"
+    # Get the style json information from GeoServer's REST API
+    if ':' in layer['name']:
+        name = layer['name'].split(':')[1]
+    else:
+        name = layer['name']
 
-def download_layer(layer, dest_dir, username=None, password=None):
+    style_url = urlparse.urljoin(url, '/geoserver/rest/layers/' +  name + '.json')
+
+    req = requests.get(style_url, auth=(username, password))
+    if req.status_code == 401:
+        msg = 'Authentication required to download styles, please specify username and password'
+        log.debug(req.text)
+        raise RuntimeError(msg)
+    if req.status_code != 200:
+        msg = 'Could not connect to "%s". Reply was: "[%s] %s" ' % (style_url, req.status_code, req.content)
+        raise RuntimeError(msg)
+    data = json.loads(req.content)
+    style_key = 'defaultStyle'
+    assert 'layer' in data
+    #assert 'resource' in data['layer']
+    assert 'defaultStyle' in data['layer']
+    #assert 'defaultStyle' in data['layer']['resource']
+    style_json_url = data['layer']['defaultStyle']['href']
+    #FIXME: This is a dangerous way to do that replacement, what if the server is called geonode.jsonsandco.org ?
+    style_raw_url = style_json_url.replace('.json', '.sld')
+    req = requests.get(style_raw_url, auth=(username, password))
+    return req.content
+
+def download_layer(layer, url,  dest_dir, username=None, password=None):
     # download_links is originally a list of lists, each item looks like:
     # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
     # transforms it into a simple dict, with items like:
@@ -123,7 +149,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
             log.debug('Saved metadata from "%s" as "%s"' % (layer['name'], metadata_filename))
 
     # Download the associated style
-    style_data = get_style(layer, username, password)
+    style_data = get_style(layer, url, username, password)
     style_filename = base_filename + '.sld'
     with open(style_filename, 'wb') as style_file:
         style_file.write(style_data)
@@ -191,7 +217,7 @@ def get_data(argv=None):
     output = []
     for i, layer in enumerate(layers):
         try:
-            download_layer(layer, dest_dir, username, password)
+            download_layer(layer, url, dest_dir, username, password)
         except Exception, e:
             log.exception('Could not download layer "%s".' % layer['name']) 
             exception_type, error, traceback = sys.exc_info()
