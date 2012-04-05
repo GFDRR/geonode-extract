@@ -128,6 +128,24 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
             layer_file.write(content)
             log.debug('Saved data from "%s" as "%s"' % (layer['name'], layer_filename))
 
+
+    base_filename, extension = os.path.splitext(layer_filename)
+ 
+    # If this file a zipfile, unpack all files with the same base_filename
+    # and remove the downloaded zip
+    if zipfile.is_zipfile(layer_filename):
+        log.debug('Layer "%s" is zipped, unpacking now' % layer_filename)
+        # Create a ZipFile object
+        z = zipfile.ZipFile(layer_filename)
+        for f in z.namelist():
+            log.debug('Found "%s" in "%s"' % (f, layer_filename)) 
+            _, extension = os.path.splitext(f)
+            filename = base_filename + extension
+            log.debug('Saving "%s" to "%s"' % (f, filename))
+            z.extract(f, filename)
+        log.debug('Removing "%s" because it is not needed anymore' % layer_filename)
+        os.remove(layer_filename)
+
     # metadata_links is originally a list of lists, each item looks like:
     # ['text/xml', 'TC211', 'http://...//'], this operation
     # transforms it into a simple dict, with items like:
@@ -135,7 +153,6 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
     metadata_links = dict([ (b, c) for a, b, c in layer['metadata_links']])
     metadata_link = metadata_links['TC211']
 
-    base_filename, extension = os.path.splitext(layer_filename)
     metadata_filename = base_filename + '.xml'
     try:
         # Download the file
