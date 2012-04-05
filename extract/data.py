@@ -196,6 +196,10 @@ def get_data(argv=None):
             log.exception('Could not download layer "%s".' % layer['name']) 
             exception_type, error, traceback = sys.exc_info()
             status = 'failed'
+            if not ignore_errors:
+                msg = "Stopping process because --ignore-errors was not set and an error was found."
+                log.error(msg)
+                sys.exit(-1)
         else:
             status = 'downloaded'
 
@@ -207,10 +211,6 @@ def get_data(argv=None):
            info['traceback'] = traceback
            info['exception_type'] = exception_type
            info['error'] = error
-           if not ignore_errors:
-               msg = "Stopping process because --ignore-errors was not set and an error was found."
-               log.error(msg, None, e)
-               raise e
 
         output.append(info)
 
