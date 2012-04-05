@@ -32,6 +32,8 @@ parser.add_option("-i", "--ignore-errors", action="store_true", dest='ignore_err
                           help="Stop after any errors are encountered")
 parser.add_option("-l", "--limit", dest="limit", type="int",
                           help="Limit the number of layers to be extracted")
+parser.add_option("-q", "--query", dest="query",
+                          help="Search terms")
 parser.add_option("-v", dest="verbose", default=1, action="count",
                       help="increment output verbosity; may be specified multiple times")
 
@@ -152,6 +154,7 @@ def get_data(argv=None):
     password = options.password
 
     limit = options.limit
+    query = options.query
 
     output_dir = os.path.abspath(dest_dir)
     log.info('Getting data from "%s" into "%s"' % (url, output_dir))
@@ -163,8 +166,11 @@ def get_data(argv=None):
     # Get the list of layers from GeoNode's search api JSON endpoint
     search_api_endpoint = urlparse.urljoin(url, '/data/search/api')
     log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
+    payload = {}
+    if query is not None:
+        payload['q'] = query
     try:
-        r = requests.get(search_api_endpoint)
+        r = requests.get(search_api_endpoint, params=payload)
     except requests.exceptions.ConnectionError, e:
         log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
         raise e
