@@ -70,7 +70,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
                                          layer['title'],
                                          ', '.join(download_links.keys()))
         log.error(msg)
-        raise Exception(msg)
+        raise RuntimeError(msg)
 
     download_link = download_links[download_format]
     log.debug('Download link for this layer is "%s"' % download_link)
@@ -79,7 +79,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
         # Download the file
         r = requests.get(download_link)
     except Exception, e:
-        log.error('There was a problem downloading "%s".' % layer['title'],e)
+        log.exception('There was a problem downloading "%s".' % layer['title'])
         raise e
     else:
         # FIXME(Ariel): This may be dangerous if file is too large.
@@ -89,7 +89,7 @@ def download_layer(layer, dest_dir, username=None, password=None):
             msg = ('Layer "%s" did not have a valid download link "%s"' % 
                     (layer['title'], download_link))
             log.error(msg)
-            raise Exception(msg)
+            raise RuntimeError(msg)
         # Figure out the filename based on the 'content-disposition' header.
         filename = r.headers['content-disposition'].split('filename=')[1]
         layer_filename = os.path.join(dest_dir, filename)
@@ -164,7 +164,7 @@ def get_data(argv=None):
     try:
         r = requests.get(search_api_endpoint)
     except requests.exceptions.ConnectionError, e:
-        log.error('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
+        log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
         raise e
     data = json.loads(r.text)
     log.info('Found %s layers, starting extraction' % data['total'])
@@ -185,7 +185,7 @@ def get_data(argv=None):
         try:
             download_layer(layer, dest_dir, username, password)
         except Exception, e:
-            log.error('Could not download layer "%s".' % layer['title'], e) 
+            log.exception('Could not download layer "%s".' % layer['name']) 
             exception_type, error, traceback = sys.exc_info()
             status = 'failed'
         else:
@@ -201,7 +201,7 @@ def get_data(argv=None):
            info['error'] = error
            if not ignore_errors:
                msg = "Stopping process because --ignore-errors was not set and an error was found."
-               log.error(msg, e)
+               log.error(msg, None, e)
                raise e
 
         output.append(info)
