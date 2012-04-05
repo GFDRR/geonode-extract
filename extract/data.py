@@ -230,7 +230,7 @@ def get_data(argv=None):
             status = 'downloaded'
 
         info = {'name': layer['name'], 'title': layer['title'], 'status': status}
-        msg = "[%s] Layer %s (%d/%d)" % (info['status'], info['name'], i, number)
+        msg = "[%s] Layer %s (%d/%d)" % (info['status'], info['name'], i+1, number)
         log.info(msg)
 
         if status == 'failed':
