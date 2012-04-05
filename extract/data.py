@@ -201,7 +201,7 @@ def get_data(argv=None):
            info['error'] = error
            if not ignore_errors:
                msg = "Stopping process because --ignore-errors was not set and an error was found."
-               log.debug(msg)
+               log.error(msg, e)
                raise e
 
         output.append(info)

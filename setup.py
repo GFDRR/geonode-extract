@@ -105,7 +105,7 @@ setup(name          = 'geonode-extract',
       scripts = ['scripts/geonode-extract',],
       data_files = [('/usr/share/man/man1', ['geonode-extract.1']),],
       install_requires = ['requests',],
-      cmdclass={'build_manpage': build_manpage},
+      cmdclass=cmdclass,
       classifiers   = [
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
