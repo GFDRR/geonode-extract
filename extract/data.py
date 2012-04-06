@@ -142,7 +142,8 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
             _, extension = os.path.splitext(f)
             filename = base_filename + extension
             log.debug('Saving "%s" to "%s"' % (f, filename))
-            z.extract(f, filename)
+            z.extract(f, dest_dir)
+            os.rename(os.path.join(dest_dir, f), filename) 
         log.debug('Removing "%s" because it is not needed anymore' % layer_filename)
         os.remove(layer_filename)
 
@@ -268,6 +269,7 @@ def get_data(argv=None):
 
     downloaded = [dict_['name'] for dict_ in output if dict_['status']=='downloaded']
     failed = [dict_['name'] for dict_ in output if dict_['status']=='failed']
+    skipped = [dict_['name'] for dict_ in output if dict_['status']=='skipped']
     finish = datetime.datetime.now()
     td = finish - start
     duration = td.microseconds / 1000000 + td.seconds + td.days * 24 * 3600
@@ -285,5 +287,6 @@ def get_data(argv=None):
                               len(output), duration_rounded))
     log.info("%d Downloaded layers" % len(downloaded))
     log.info("%d Failed layers" % len(failed))
+    log.info("%d Skipped layers" % len(skipped))
     if len(output) > 0:
         log.info("%f seconds per layer" % (duration * 1.0 / len(output)))
