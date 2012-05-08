@@ -242,7 +242,11 @@ def get_data(argv=None):
 
 
     all_layers = data['rows']
-    next_list = data['next']
+
+    if 'next' in data:
+        next_list = data['next']
+    else:
+        next_list = None
 
     while(next_list is not None):
         new_data = get_layer_list(url, endpoint=next_list)
@@ -257,7 +261,6 @@ def get_data(argv=None):
     # Since the search API may return paginated results, repeast the process to fetch all layers.
 
     layers = all_layers
-    print len(layers)
     if limit is not None:
         if limit < len(all_layers):
             layers = all_layers[:limit]
