@@ -107,7 +107,7 @@ setup(name          = 'geonode-extract',
       install_requires = ['requests',],
       cmdclass=cmdclass,
       classifiers   = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
