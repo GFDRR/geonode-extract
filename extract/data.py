@@ -184,9 +184,13 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
 
     # Download the associated style
     style_data = get_style(layer, url, username, password)
+
+    xml_style_data = minidom.parseString(style_data)
+    pretty_style_data = xml_style_data.toprettyxml().encode('utf-8')
+
     style_filename = base_filename + '.sld'
     with open(style_filename, 'wb') as style_file:
-        style_file.write(style_data)
+        style_file.write(pretty_style_data)
         log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
 
 
