@@ -38,7 +38,7 @@ parser.add_option("-q", "--query", dest="query",
 parser.add_option("-v", dest="verbose", default=1, action="count",
                       help="increment output verbosity; may be specified multiple times")
 
-SUPPORTED_FORMATS = ['zip', 'geotiff']
+SUPPORTED_FORMATS = ['zip', 'tiff']
 
 
 def get_parser():
