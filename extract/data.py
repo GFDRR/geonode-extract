@@ -174,6 +174,23 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         style_file.write(style_data)
         log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
 
+
+def get_layer_list(url, query=None, endpoint='/data/search/api'):
+    # Get the list of layers from GeoNode's search api JSON endpoint
+    search_api_endpoint = urlparse.urljoin(url, endpoint)
+    log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
+    payload = {}
+    if query is not None:
+        payload['q'] = query
+
+    try:
+        r = requests.get(search_api_endpoint, params=payload)
+    except requests.exceptions.ConnectionError, e:
+        log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
+        raise e
+    data = json.loads(r.text)
+    return data
+
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
     the_argv = argv or sys.argv[:]
@@ -208,25 +225,29 @@ def get_data(argv=None):
     if not os.path.isdir(output_dir):
         os.makedirs(dest_dir)
 
-    # Get the list of layers from GeoNode's search api JSON endpoint
-    search_api_endpoint = urlparse.urljoin(url, '/data/search/api')
-    log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
-    payload = {}
-    if query is not None:
-        payload['q'] = query
-    try:
-        r = requests.get(search_api_endpoint, params=payload)
-    except requests.exceptions.ConnectionError, e:
-        log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
-        raise e
-    data = json.loads(r.text)
-    log.info('Found %s layers, starting extraction' % data['total'])
+    data = get_layer_list(url, query)
+    total = data['total']
+
+    log.info('Found %s layers, starting extraction' % total)
+
 
     all_layers = data['rows']
+    next_list = data['next']
 
+    while(next_list is not None):
+        new_data = get_layer_list(url, endpoint=next_list)
+        new_layers = new_data['rows']
+        next_list = new_data['next']
+
+        if len(new_layers)==0:
+            break
+
+        all_layers.extend(new_layers)
+
+    # Since the search API may return paginated results, repeast the process to fetch all layers.
 
     layers = all_layers
-
+    print len(layers)
     if limit is not None:
         if limit < len(all_layers):
             layers = all_layers[:limit]
