@@ -22,10 +22,7 @@ geonode-extract http://example.geonode.com -d <dest_dir>
 Known issues
 ============
 
- * Does not download styles
- * Does not unzip the shapefiles
  * Does not work for rasters
- * Does not respect pagination, only downloads the first batch of results
  * The xml includes the CSW transaction used to obtain it
  * Does not work with layers with permissions enabled
 
