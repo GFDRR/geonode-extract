@@ -23,7 +23,6 @@ Known issues
 ============
 
  * Does not work for rasters
- * The xml includes the CSW transaction used to obtain it
  * Does not work with layers with permissions enabled
 
 Thanks
