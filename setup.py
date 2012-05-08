@@ -24,7 +24,7 @@ def read(fname):
 
 MAJOR = 0
 MINOR = 3
-MICRO = 5
+MICRO = 6
 ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 

@@ -171,7 +171,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
             md_node = first.childNodes[1]
             domcontent.replaceChild(md_node, first)
         
-        raw_xml = domcontent.toprettyxml()
+        raw_xml = domcontent.toprettyxml().encode('utf-8')
  
         with open(metadata_filename, 'wb') as metadata_file:
             metadata_file.write(raw_xml)
