@@ -17,12 +17,11 @@ Get the latest release using ``pip`` or ``easy_install``::
 Usage
 =====
 
-geonode-extract http://example.geonode.com -d <dest_dir>
+geonode-extract http://demo.geonode.org -d <dest_dir>
 
 Known issues
 ============
 
- * Does not work for rasters
  * Does not work with layers with permissions enabled
 
 Thanks

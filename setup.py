@@ -23,8 +23,8 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 MAJOR = 0
-MINOR = 3
-MICRO = 6
+MINOR = 4
+MICRO = 0
 ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
