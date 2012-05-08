@@ -9,6 +9,7 @@ import datetime
 from extract import __version__
 from optparse import OptionParser
 import traceback as tb
+from xml.dom import minidom
 
 log = logging.getLogger("geonode-extract")
 
@@ -163,8 +164,17 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         log.error('There was a problem downloading "%s": %s' % (layer['name'], str(e)), e)
         raise e
     else:
+        domcontent = minidom.parseString(content)
+        first = domcontent.firstChild
+
+        if first._get_tagName() == 'csw:GetRecordByIdResponse':
+            md_node = first.childNodes[1]
+            domcontent.replaceChild(md_node, first)
+        
+        raw_xml = domcontent.toprettyxml()
+ 
         with open(metadata_filename, 'wb') as metadata_file:
-            metadata_file.write(content)
+            metadata_file.write(raw_xml)
             log.debug('Saved metadata from "%s" as "%s"' % (layer['name'], metadata_filename))
 
     # Download the associated style
