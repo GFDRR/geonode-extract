@@ -122,8 +122,13 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
                     (layer['name'], download_link))
             log.error(msg)
             raise RuntimeError(msg)
-        # Figure out the filename based on the 'content-disposition' header.
-        filename = r.headers['content-disposition'].split('filename=')[1]
+
+        filename = layer['name']
+
+        # Strip out the 'geonode:' if it exists
+        if ':' in filename:
+            filename = layer['name'].split(':')[1]
+        
         layer_filename = os.path.join(dest_dir, filename)
         with open(layer_filename, 'wb') as layer_file:
             layer_file.write(content)
