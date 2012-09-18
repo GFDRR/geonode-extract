@@ -62,25 +62,7 @@ def get_style(layer, url, username=None, password=None):
     else:
         name = layer['name']
 
-    style_url = urlparse.urljoin(url, '/geoserver/rest/layers/' +  name + '.json')
-
-    req = requests.get(style_url, auth=(username, password))
-    if req.status_code == 401:
-        msg = 'Authentication required to download styles, please specify username and password'
-        log.debug(req.text)
-        raise RuntimeError(msg)
-    if req.status_code != 200:
-        msg = 'Could not connect to "%s". Reply was: "[%s] %s" ' % (style_url, req.status_code, req.content)
-        raise RuntimeError(msg)
-    data = json.loads(req.content)
-    style_key = 'defaultStyle'
-    assert 'layer' in data
-    #assert 'resource' in data['layer']
-    assert 'defaultStyle' in data['layer']
-    #assert 'defaultStyle' in data['layer']['resource']
-    style_json_url = data['layer']['defaultStyle']['href']
-    #FIXME: This is a dangerous way to do that replacement, what if the server is called geonode.jsonsandco.org ?
-    style_raw_url = style_json_url.replace('.json', '.sld')
+    style_raw_url = urlparse.urljoin(url, '/geoserver/styles/' +  name + '.sld')
     req = requests.get(style_raw_url, auth=(username, password))
     return req.content
 
@@ -118,9 +100,9 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
     else:
         # FIXME(Ariel): This may be dangerous if file is too large.
         content = r.content
-            
+
         if 'content-disposition' not in r.headers:
-            msg = ('Layer "%s" did not have a valid download link "%s"' % 
+            msg = ('Layer "%s" did not have a valid download link "%s"' %
                     (layer['name'], download_link))
             log.error(msg)
             raise RuntimeError(msg)
@@ -130,7 +112,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         # Strip out the 'geonode:' if it exists
         if ':' in filename:
             filename = layer['name'].split(':')[1]
-        
+
         layer_filename = os.path.join(dest_dir, filename)
         with open(layer_filename, 'wb') as layer_file:
             layer_file.write(content)
@@ -138,7 +120,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
 
 
     base_filename, extension = os.path.splitext(layer_filename)
- 
+
     # If this file a zipfile, unpack all files with the same base_filename
     # and remove the downloaded zip
     if zipfile.is_zipfile(layer_filename):
@@ -146,12 +128,12 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         # Create a ZipFile object
         z = zipfile.ZipFile(layer_filename)
         for f in z.namelist():
-            log.debug('Found "%s" in "%s"' % (f, layer_filename)) 
+            log.debug('Found "%s" in "%s"' % (f, layer_filename))
             _, extension = os.path.splitext(f)
             filename = base_filename + extension
             log.debug('Saving "%s" to "%s"' % (f, filename))
             z.extract(f, dest_dir)
-            os.rename(os.path.join(dest_dir, f), filename) 
+            os.rename(os.path.join(dest_dir, f), filename)
         log.debug('Removing "%s" because it is not needed anymore' % layer_filename)
         os.remove(layer_filename)
 
@@ -177,9 +159,9 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         if first._get_tagName() == 'csw:GetRecordByIdResponse':
             md_node = first.childNodes[1]
             domcontent.replaceChild(md_node, first)
-        
+
         raw_xml = domcontent.toprettyxml().encode('utf-8')
- 
+
         with open(metadata_filename, 'wb') as metadata_file:
             metadata_file.write(raw_xml)
             log.debug('Saved metadata from "%s" as "%s"' % (layer['name'], metadata_filename))
@@ -291,7 +273,7 @@ def get_data(argv=None):
             try:
                 download_layer(layer, url, dest_dir, username, password)
             except Exception, e:
-                log.exception('Could not download layer "%s".' % layer['name']) 
+                log.exception('Could not download layer "%s".' % layer['name'])
                 exception_type, error, traceback = sys.exc_info()
                 status = 'failed'
                 if not ignore_errors:
