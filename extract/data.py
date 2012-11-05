@@ -144,9 +144,6 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         log.error('There was a problem downloading "%s": %s' % (layer['name'], str(e)), e)
         raise e
     else:
-        # Breakpoint for Vivien
-        import ipdb;ipdb.set_trace()
-
         domcontent = minidom.parseString(content)
         gmd_tag = 'gmd:MD_Metadata'
         metadata = domcontent.getElementsByTagName(gmd_tag)
@@ -155,7 +152,8 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         assert len(metadata) == 1, msg
 
         md_node = metadata[0]
-        domcontent.replaceChild(md_node, wrapper)
+
+        domcontent.childNodes = [md_node]
 
         raw_xml = domcontent.toprettyxml().encode('utf-8')
 
