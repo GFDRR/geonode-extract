@@ -144,13 +144,18 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         log.error('There was a problem downloading "%s": %s' % (layer['name'], str(e)), e)
         raise e
     else:
-        print content
-        domcontent = minidom.parseString(content)
-        first = domcontent.firstChild
+        # Breakpoint for Vivien
+        import ipdb;ipdb.set_trace()
 
-        if first._get_tagName() == 'csw:GetRecordByIdResponse':
-            md_node = first.childNodes[1]
-            domcontent.replaceChild(md_node, first)
+        domcontent = minidom.parseString(content)
+        gmd_tag = 'gmd:MD_Metadata'
+        metadata = domcontent.getElementsByTagName(gmd_tag)
+
+        msg = 'Expected one and only one <%s>' % gmd_tag
+        assert len(metadata) == 1, msg
+
+        md_node = metadata[0]
+        domcontent.replaceChild(md_node, wrapper)
 
         raw_xml = domcontent.toprettyxml().encode('utf-8')
 
