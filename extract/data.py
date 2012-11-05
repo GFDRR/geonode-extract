@@ -47,24 +47,6 @@ SUPPORTED_FORMATS = ['zip', 'tiff']
 def get_parser():
     return parser
 
-def get_style(layer, url, username=None, password=None):
-    """Downloads the associated SLD file for a given GeoNode layer
-
-       The current implementation goes to the layer's detail page and follows the
-       link to the GeoServer's REST API endpoint. It needs the username and password,
-       because by default GeoServer restricts read access to those.
-
-       It returns the raw content of the SLD file in text format.
-    """
-    # Get the style json information from GeoServer's REST API
-    if ':' in layer['name']:
-        name = layer['name'].split(':')[1]
-    else:
-        name = layer['name']
-
-    style_raw_url = urlparse.urljoin(url, '/geoserver/styles/' +  name + '.sld')
-    req = requests.get(style_raw_url, auth=(username, password))
-    return req.content
 
 def download_layer(layer, url,  dest_dir, username=None, password=None):
     links = layer['links']
@@ -161,16 +143,25 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
             metadata_file.write(raw_xml)
             log.debug('Saved metadata from "%s" as "%s"' % (layer['name'], metadata_filename))
 
-    # Download the associated style
-    style_data = get_style(layer, url, username, password)
-
-    xml_style_data = minidom.parseString(style_data)
-    pretty_style_data = xml_style_data.toprettyxml().encode('utf-8')
+    style_link = links['sld']['url']
 
     style_filename = base_filename + '.sld'
-    with open(style_filename, 'wb') as style_file:
-        style_file.write(pretty_style_data)
-        log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
+
+    try:
+        # Download the file
+        r = requests.get(style_link)
+        content = r.content
+    except Exception, e:
+        log.error('There was a problem downloading "%s": %s' % (layer['name'], str(e)), e)
+        raise e
+    else:
+        style_data = r.content
+        xml_style_data = minidom.parseString(style_data)
+        pretty_style_data = xml_style_data.toprettyxml().encode('utf-8')
+
+        with open(style_filename, 'wb') as style_file:
+            style_file.write(pretty_style_data)
+            log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
 
 
 def get_layer_list(url, query=None, endpoint='/search/api'):
