@@ -178,7 +178,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
 
 
-def get_layer_list(url, query=None, endpoint='/data/search/api'):
+def get_layer_list(url, query=None, endpoint='/search/api'):
     # Get the list of layers from GeoNode's search api JSON endpoint
     search_api_endpoint = urlparse.urljoin(url, endpoint)
     log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
@@ -234,7 +234,7 @@ def get_data(argv=None):
     log.info('Found %s layers, starting extraction' % total)
 
 
-    all_layers = data['rows']
+    all_layers = data['results']
 
     if 'next' in data:
         next_list = data['next']
