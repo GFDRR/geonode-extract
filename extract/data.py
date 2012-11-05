@@ -67,26 +67,22 @@ def get_style(layer, url, username=None, password=None):
     return req.content
 
 def download_layer(layer, url,  dest_dir, username=None, password=None):
-    # download_links is originally a list of lists, each item looks like:
-    # ['zip', 'Zipped Shapefile', 'http://...//'], this operation
-    # transforms it into a simple dict, with items like:
-    # {'zip': 'http://.../'}
-    download_links = dict([ (a, c) for a, b, c in layer['download_links']])
+    links = layer['links']
 
     # Find out the appropiate download format for this layer
     for f in SUPPORTED_FORMATS:
-        if f in download_links:
+        if f in links:
             download_format = f
             break
     else:
         msg = 'Only "%s" are supported for the extract, available formats for "%s" are: "%s"' % (
                                          ', '.join(SUPPORTED_FORMATS),
                                          layer['name'],
-                                         ', '.join(download_links.keys()))
+                                         ', '.join(links.keys()))
         log.error(msg)
         raise RuntimeError(msg)
 
-    download_link = download_links[download_format]
+    download_link = links[download_format]['url']
     log.debug('Download link for this layer is "%s"' % download_link)
 
     try:
@@ -137,12 +133,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         log.debug('Removing "%s" because it is not needed anymore' % layer_filename)
         os.remove(layer_filename)
 
-    # metadata_links is originally a list of lists, each item looks like:
-    # ['text/xml', 'TC211', 'http://...//'], this operation
-    # transforms it into a simple dict, with items like:
-    # {'TC211': 'http://.../'}
-    metadata_links = dict([ (b, c) for a, b, c in layer['metadata_links']])
-    metadata_link = metadata_links['TC211']
+    metadata_link = links['xml']['url']
 
     metadata_filename = base_filename + '.xml'
     try:
@@ -153,6 +144,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         log.error('There was a problem downloading "%s": %s' % (layer['name'], str(e)), e)
         raise e
     else:
+        print content
         domcontent = minidom.parseString(content)
         first = domcontent.firstChild
 
