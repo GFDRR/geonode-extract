@@ -178,7 +178,12 @@ def get_layer_list(url, query=None, endpoint='/search/api'):
         log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
         raise e
     data = json.loads(r.text)
-    return data
+    if data['success']==False:
+        msg = 'Geonode search returned the following errors "%s"' % (','.join(data['errors']))
+        log.error(msg)
+        raise RuntimeError(msg)
+    else:
+        return data
 
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
