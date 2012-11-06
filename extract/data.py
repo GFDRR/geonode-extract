@@ -136,7 +136,6 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         md_node = metadata[0]
 
         domcontent.childNodes = [md_node]
-
         raw_xml = domcontent.toprettyxml().encode('utf-8')
 
         with open(metadata_filename, 'wb') as metadata_file:
@@ -162,28 +161,67 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
         with open(style_filename, 'wb') as style_file:
             style_file.write(pretty_style_data)
             log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
-
-
+            
+            
 def get_layer_list(url, query=None, endpoint='/search/api'):
-    # Get the list of layers from GeoNode's search api JSON endpoint
-    search_api_endpoint = urlparse.urljoin(url, endpoint)
-    log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
-    payload = {}
-    if query is not None:
-        payload['q'] = query
-
-    try:
-        r = requests.get(search_api_endpoint, params=payload)
-    except requests.exceptions.ConnectionError, e:
-        log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
-        raise e
-    data = json.loads(r.text)
-    if data['success']==False:
-        msg = 'Geonode search returned the following errors "%s"' % (','.join(data['errors']))
-        log.error(msg)
-        raise RuntimeError(msg)
+    """ Get the list of layers from GeoNode's search api JSON endpoint
+    
+    Return a dictionnary of layers with the layer name as the key
+    """   
+    
+    # Get one page of the layer list when since the search API may return paginated results, 
+    def get_layer_list_page(url,query,endpoint):
+        search_api_endpoint = urlparse.urljoin(url, endpoint)
+        log.debug('Retrieving list of layers from "%s"' % search_api_endpoint)
+        payload = {}
+        if query is not None:
+            payload['q'] = query
+      
+        try:
+            r = requests.get(search_api_endpoint, params=payload)
+        except requests.exceptions.ConnectionError, e:
+            log.exception('Could not connect to %s, are you sure you are connected to the internet?' % search_api_endpoint)
+            raise e
+        data = json.loads(r.text)
+    
+        if data['success']==False:
+            msg = 'Geonode search returned the following errors "%s"' % (','.join(data['errors']))
+            log.error(msg)
+            raise RuntimeError(msg)
+        else:
+            return data   
+                     
+    # Get the first page of data
+    data = get_layer_list_page(url, query, endpoint)
+    total = data['total']
+    log.info('Found %s layers' % total)
+    all_layers = data['results']
+    
+    # Repeat the process if there are several pages
+    if 'next' in data:
+        next_list = data['next']
     else:
-        return data
+        next_list = None
+
+    while(next_list is not None):
+        new_data = get_layer_list(url, endpoint=next_list)
+        new_layers = new_data['rows']
+        next_list = new_data['next']
+
+        if len(new_layers)==0:
+            break
+
+        all_layers.extend(new_layers)
+    
+    #Transform the list of layers in a dictionnary of layers for ease of use later on
+    #In Python 3 use a dict comprehension instead: layers = {layer['name']:layer for layer in all_layers}
+    layers = {}
+    for layer in all_layers:
+        name = layer['name'] 
+        layers[name] = layer
+    
+    return layers
+     
 
 def get_data(argv=None):
     # Get the arguments passed or get them from sys
@@ -219,32 +257,9 @@ def get_data(argv=None):
     if not os.path.isdir(output_dir):
         os.makedirs(dest_dir)
 
-    data = get_layer_list(url, query)
-    total = data['total']
 
-    log.info('Found %s layers, starting extraction' % total)
-
-
-    all_layers = data['results']
-
-    if 'next' in data:
-        next_list = data['next']
-    else:
-        next_list = None
-
-    while(next_list is not None):
-        new_data = get_layer_list(url, endpoint=next_list)
-        new_layers = new_data['rows']
-        next_list = new_data['next']
-
-        if len(new_layers)==0:
-            break
-
-        all_layers.extend(new_layers)
-
-    # Since the search API may return paginated results, repeast the process to fetch all layers.
-
-    layers = all_layers
+    layers = get_layer_list(url, query)
+    
     if limit is not None:
         if limit < len(all_layers):
             layers = all_layers[:limit]
@@ -252,7 +267,8 @@ def get_data(argv=None):
     number = len(layers)
     log.info('Processing %s layers' % number)
     output = []
-    for i, layer in enumerate(layers):
+    i=0
+    for layer_name,layer in layers.iteritems():
         if ':' in layer['name']:
             name = layer['name'].split(':')[1]
         else:
@@ -277,7 +293,8 @@ def get_data(argv=None):
         info = {'name': layer['name'], 'title': layer['title'], 'status': status}
         msg = "[%s] Layer %s (%d/%d)" % (info['status'], info['name'], i+1, number)
         log.info(msg)
-
+        i += 1
+        
         if status == 'failed':
            info['traceback'] = traceback
            info['exception_type'] = exception_type
