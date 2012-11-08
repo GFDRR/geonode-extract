@@ -48,7 +48,32 @@ def get_parser():
     return parser
 
 
-def download_layer(layer, url,  dest_dir, username=None, password=None):
+def download_layer(layer_name, url,  dest_dir='data', username=None, password=None):
+    
+    #Dictionnary to store the path of the file downloaded, later on could be stored in a layer object
+    layer_paths = {'data': None, 'metadata': None, 'style': None}
+
+    #Necessary because there is currently a bug in search api where no results are returned if the name contains ":"
+    #To remove when fixed in Geonode
+    if ':' in layer_name:
+        layer_name_clean = layer_name.split(':')[1]
+    else:
+        layer_name_clean = layer_name
+    query_name = layer_name_clean
+
+    layers = get_layer_list(url, query=query_name)
+
+    if len(layers) == 0:
+        msg = 'There is no layer with this name: "%s"; no layer downloaded' % (layer_name_clean)
+        log.error(msg)
+        raise RuntimeError(msg)
+    elif len(layers) > 1:
+        msg = 'Several layers with the same name "%s"; no layer downloaded' % (layer_name_clean)
+        log.error(msg)
+        raise RuntimeError(msg)
+    else:
+        layer=layers[layer_name] 
+
     links = layer['links']
 
     # Find out the appropiate download format for this layer
@@ -84,20 +109,27 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
                     (layer['name'], download_link))
             log.error(msg)
             raise RuntimeError(msg)
-
-        filename = layer['name']
+        
+        filename = layer['name'] + links[download_format]['extension']
 
         # Strip out the 'geonode:' if it exists
         if ':' in filename:
             filename = layer['name'].split(':')[1]
+        
+        output_dir = os.path.abspath(dest_dir)
+        log.info('Getting data from "%s" into "%s"' % (url, output_dir))
 
+        # Create output directory if it does not exist
+        if not os.path.isdir(output_dir):
+            os.makedirs(dest_dir)
+        
         layer_filename = os.path.join(dest_dir, filename)
+        base_filename, extension = os.path.splitext(layer_filename)
         with open(layer_filename, 'wb') as layer_file:
             layer_file.write(content)
+            if extension == '.tiff':
+                layer_paths['data']=os.path.abspath(layer_filename)
             log.debug('Saved data from "%s" as "%s"' % (layer['name'], layer_filename))
-
-
-    base_filename, extension = os.path.splitext(layer_filename)
 
     # If this file a zipfile, unpack all files with the same base_filename
     # and remove the downloaded zip
@@ -112,6 +144,9 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
             log.debug('Saving "%s" to "%s"' % (f, filename))
             z.extract(f, dest_dir)
             os.rename(os.path.join(dest_dir, f), filename)
+            #FIXME(Viv): Needs to be more flexible to take into account different file formats
+            if extension == '.shp':
+                layer_paths['data']=os.path.abspath(filename)
         log.debug('Removing "%s" because it is not needed anymore' % layer_filename)
         os.remove(layer_filename)
 
@@ -140,6 +175,7 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
 
         with open(metadata_filename, 'wb') as metadata_file:
             metadata_file.write(raw_xml)
+            layer_paths['metadata']=os.path.abspath(metadata_filename)
             log.debug('Saved metadata from "%s" as "%s"' % (layer['name'], metadata_filename))
 
     style_link = links['sld']['url']
@@ -160,7 +196,10 @@ def download_layer(layer, url,  dest_dir, username=None, password=None):
 
         with open(style_filename, 'wb') as style_file:
             style_file.write(pretty_style_data)
+            layer_paths['style']=os.path.abspath(style_filename)
             log.debug('Saved style from "%s" as "%s"' % (layer['name'], style_filename))
+
+    return layer_paths
             
             
 def get_layer_list(url, query=None, endpoint='/search/api'):
@@ -176,7 +215,6 @@ def get_layer_list(url, query=None, endpoint='/search/api'):
         payload = {}
         if query is not None:
             payload['q'] = query
-      
         try:
             r = requests.get(search_api_endpoint, params=payload)
         except requests.exceptions.ConnectionError, e:
@@ -249,7 +287,6 @@ def get_data(argv=None):
 
     limit = options.limit
     query = options.query
-
     output_dir = os.path.abspath(dest_dir)
     log.info('Getting data from "%s" into "%s"' % (url, output_dir))
 
@@ -261,8 +298,8 @@ def get_data(argv=None):
     layers = get_layer_list(url, query)
     
     if limit is not None:
-        if limit < len(all_layers):
-            layers = all_layers[:limit]
+        if limit < len(layers):
+            layers =layers[:limit]
 
     number = len(layers)
     log.info('Processing %s layers' % number)
@@ -278,7 +315,7 @@ def get_data(argv=None):
             status = 'skipped'
         else:
             try:
-                download_layer(layer, url, dest_dir, username, password)
+                download_layer(layer['name'], url, dest_dir, username, password)
             except Exception, e:
                 log.exception('Could not download layer "%s".' % layer['name'])
                 exception_type, error, traceback = sys.exc_info()
